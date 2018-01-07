@@ -83,8 +83,8 @@ func (q *Query) SelectByID(id interface{}) error {
 	return q.wrap(func() error {
 		query := `SELECT ` +
 			strings.Join(q.mapping.Fields, ", ") +
-			` FROM ` + q.mapping.Table +
-			` WHERE id = $1 LIMIT 1`
+			` FROM "` + q.mapping.Table +
+			`" WHERE id = $1 LIMIT 1`
 
 		rows, err := q.tx.QueryContext(q.ctx, query, id)
 		if err != nil {
@@ -111,10 +111,10 @@ func (q *Query) Insert(id interface{}) error {
 		if id != nil {
 			getFieldsFromIndex = 0
 			// we use param id value, not object value
-			values = append([]interface{}{id}, q.values...)
+			values = append([]interface{}{&id}, values...)
 		}
 
-		s := `INSERT INTO ` + q.mapping.Table + ` (`
+		s := `INSERT INTO "` + q.mapping.Table + `" (`
 		s += strings.Join(q.mapping.Fields[getFieldsFromIndex:], ", ")
 		s += `) VALUES (`
 		params := make([]string, len(q.mapping.Fields[getFieldsFromIndex:]))
@@ -124,8 +124,11 @@ func (q *Query) Insert(id interface{}) error {
 		s += strings.Join(params, ", ")
 		s += ")"
 
-		_, err := q.tx.Exec(s, values...)
-		return err
+		if id == nil {
+			s += " RETURNING id"
+		}
+
+		return q.tx.QueryRowContext(q.ctx, s, values...).Scan(q.values[0])
 	})
 }
 
@@ -133,7 +136,7 @@ func (q *Query) Insert(id interface{}) error {
 func (q *Query) Update() error {
 	return q.wrap(func() error {
 		names := make([]string, len(q.mapping.Fields))
-		s := `UPDATE ` + q.mapping.Table + ` SET `
+		s := `UPDATE "` + q.mapping.Table + `" SET `
 		for i, field := range q.mapping.Fields {
 			names[i] = field + " = $" + strconv.Itoa(i+1)
 		}
