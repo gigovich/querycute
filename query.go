@@ -39,43 +39,42 @@ func New(m Mapper, options ...OptionFunc) *Query {
 // wrap each query function, is mandatory
 func (q *Query) wrap(f func() error) (err error) {
 	var tx *sql.Tx
+
 	// init transaction if it was not set
 	if q.tx == nil {
 		if q.tx, err = DB.Begin(); err != nil {
-			return err
+			return
 		}
 		tx = q.tx
 	}
 
 	// init internal context if it was not set
-	var cancel context.CancelFunc
 	if q.ctx == nil {
-		q.ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+
+		q.ctx = ctx
 	}
 
 	// do query
-	if err := f(); err != nil {
-		return err
+	if err = f(); err != nil {
+		if tx != nil {
+			tx.Rollback()
+		}
+		return
 	}
 
 	// if transaction was set by us, commit them, else don't tuch
 	if tx != nil {
-		if err := tx.Commit(); err != nil {
-			return err
+		if err = tx.Commit(); err != nil {
+			return
 		}
-	}
-
-	if cancel != nil {
-		cancel()
 	}
 
 	if v, ok := q.m.(ValuesBinder); ok {
-		if err := v.OnValuesBind(q.mapping.Fields, q.values); err != nil {
-			return err
-		}
+		err = v.OnValuesBind(q.mapping.Fields, q.values)
 	}
-	return nil
+	return
 }
 
 // SelectByID model instance
