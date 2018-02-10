@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"os"
 	"testing"
@@ -117,4 +118,10 @@ var UserMapping = Mapping{
 		"name",
 		"age",
 	},
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		panic("create .env from .env.example")
+	}
 }
