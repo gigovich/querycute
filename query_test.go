@@ -18,7 +18,7 @@ func TestQuery(t *testing.T) {
 	defer cancel()
 
 	u := User{Name: "Givi", Age: 22}
-	t.Run("test insert", func(t *testing.T) {
+	t.Run("insert", func(t *testing.T) {
 		qr := New(&u, WithTx(tx), WithCtx(ctx))
 		if err := qr.Insert(nil); err != nil {
 			t.Error(err)
@@ -27,7 +27,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	u2 := User{}
-	t.Run("test select", func(t *testing.T) {
+	t.Run("select", func(t *testing.T) {
 		if err := New(&u2, WithTx(tx), WithCtx(ctx)).SelectByID(1); err != nil {
 			t.Error(err)
 			return
@@ -39,7 +39,7 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("tes update", func(t *testing.T) {
+	t.Run("update", func(t *testing.T) {
 		u2.Age = 44
 		if err := New(&u2, WithTx(tx), WithCtx(ctx)).Update(); err != nil {
 			t.Error(err)
@@ -54,6 +54,18 @@ func TestQuery(t *testing.T) {
 
 		if u3.Age != u2.Age {
 			t.Errorf("expected %v: got %v", u3.Age, u2.Age)
+		}
+	})
+
+	t.Run("insert with id", func(t *testing.T) {
+		u3 := User{
+			Name: "u3",
+			Age:  3,
+		}
+		qr := New(&u3, WithTx(tx), WithCtx(ctx))
+		if err := qr.Insert(3); err != nil {
+			t.Error(err)
+			return
 		}
 	})
 }
